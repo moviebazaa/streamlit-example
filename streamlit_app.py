@@ -67,9 +67,14 @@ def main():
                 translated_file, translated_path = translate_srt(srt_file, target_language, api_key)
                 st.success("Translation completed!")
 
-            st.download_button(label="Download Translated File", data=translated_path, file_name=translated_file)
+            download_link = generate_download_link(translated_path)
+            st.markdown(download_link, unsafe_allow_html=True)
 
     random_celeb()
+
+def generate_download_link(file_path):
+    download_url = f'<a href="{file_path}" download>Download Translated File</a>'
+    return download_url
 
 if __name__ == '__main__':
     main()
