@@ -22,6 +22,8 @@ def translate_srt(srt_file, target_language):
 
     translator = Translator(to_lang=target_language)
     start_time = time.time()
+    progress_text = st.empty()
+
     for sub in subs:
         translated_text = translator.translate(sub.text)
         sub.text = translated_text
@@ -32,9 +34,9 @@ def translate_srt(srt_file, target_language):
         elapsed_time = time.time() - start_time
         speed = translated_subs / elapsed_time
 
-        st.text(f"\rProgress: {percentage}% | Speed: {speed:.2f} lines/s", end='')
+        progress_text.write(f"Progress: {percentage}% | Speed: {speed:.2f} lines/s")
 
-    st.text("")  # Add a line break after the progress is complete
+    progress_text.write("")  # Add a line break after the progress is complete
 
     translated_filename = f"translated_{srt_file.name}"
     translated_path = os.path.join(os.getcwd(), translated_filename)
