@@ -1,9 +1,13 @@
 import random
 import streamlit as st
 import pysrt
+from azure.cognitiveservices.translation import TranslationClient
+from azure.cognitiveservices.translation.models import TextTranslationBatchRequest
+from msrest.authentication import CognitiveServicesCredentials
 import os
 import time
-from google.cloud import translate_v2 as translate
+from concurrent import futures
+import base64
 
 # Function for some random animations
 def random_celeb():
@@ -20,27 +24,27 @@ def translate_srt(srt_file, target_language, api_key):
     total_subs = len(subs)
     translated_subs = 0
 
-    # Initialize Google Translate client
-    translator = translate.Client(api_key)
+    credentials = CognitiveServicesCredentials(api_key)
+    translator = TranslationClient(endpoint="https://api.cognitive.microsofttranslator.com/", credentials=credentials)
 
     start_time = time.time()
     progress_text = st.empty()
 
-    for sub in subs:
-        # Translate each subtitle text
-        result = translator.translate(sub.text, target_language)
+    def translate_line(sub):
+        response = translator.translate_text(sub.text, target_language)
+        translated_text = response.translations[0].text
+        sub.text = translated_text
 
-        if 'translatedText' in result:
-            translated_text = result['translatedText']
-            sub.text = translated_text
+    with futures.ThreadPoolExecutor() as executor:
+        future_to_sub = {executor.submit(translate_line, sub): sub for sub in subs}
+        for future in futures.as_completed(future_to_sub):
+            translated_subs += 1
+            progress = translated_subs / total_subs
+            percentage = int(progress * 100)
+            elapsed_time = time.time() - start_time
+            speed = translated_subs / elapsed_time
 
-        translated_subs += 1
-        progress = translated_subs / total_subs
-        percentage = int(progress * 100)
-        elapsed_time = time.time() - start_time
-        speed = translated_subs / elapsed_time
-
-        progress_text.write(f"Progress: {percentage}% | Speed: {speed:.2f} lines/s")
+            progress_text.write(f"Progress: {percentage}% | Speed: {speed:.2f} lines/s")
 
     progress_text.write("")  # Add a line break after the progress is complete
 
@@ -51,7 +55,7 @@ def translate_srt(srt_file, target_language, api_key):
 
     os.remove(temp_path)
 
-    return translated_filename
+    return translated_filename, translated_path
 
 # Streamlit app
 def main():
@@ -60,20 +64,24 @@ def main():
     srt_file = st.file_uploader("Upload .srt file", type=".srt")
     if srt_file:
         target_language = st.selectbox("Select Target Language", ["en", "fr", "ml", "es"])  # Add more language options if needed
-        api_key = st.text_input("Enter Google Translate API Key")
+        api_key = st.text_input("Enter Azure Translator Text API key")
 
         if st.button("Translate"):
-            if api_key:
-                with st.spinner("Translating..."):
-                    translated_file = translate_srt(srt_file, target_language, api_key)
-                    st.success("Translation completed!")
+            with st.spinner("Translating..."):
+                translated_file, translated_path = translate_srt(srt_file, target_language, api_key)
+                st.success("Translation completed!")
 
-                translated_path = os.path.join(os.getcwd(), translated_file)
-                st.download_button("Download Translated File", translated_path, f"translated_{srt_file.name}")
-            else:
-                st.warning("Please enter the Google Translate API Key")
+            download_link = generate_download_link(translated_path)
+            st.markdown(download_link, unsafe_allow_html=True)
 
     random_celeb()
+
+def generate_download_link(file_path):
+    with open(file_path, "rb") as f:
+        data = f.read()
+    encoded_file = base64.b64encode(data).decode()
+    href = f'<a href="data:file/srt;base64,{encoded_file}" download>Download Translated File</a>'
+    return href
 
 if __name__ == '__main__':
     main()
