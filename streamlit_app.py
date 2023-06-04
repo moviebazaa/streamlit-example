@@ -1,6 +1,8 @@
+import random
 from flask import Flask, render_template, request, redirect, send_file
 import pysrt
 from translate import Translator
+
 
 app = Flask(__name__)
 
