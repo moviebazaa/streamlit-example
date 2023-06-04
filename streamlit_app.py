@@ -13,8 +13,7 @@ def random_celeb():
 
 # Function to translate .srt file
 def translate_srt(srt_file, target_language, api_key):
-    temp_dir = os.path.dirname(os.path.abspath(__file__))
-    temp_path = os.path.join(temp_dir, "temp.srt")
+    temp_path = "temp.srt"
     with open(temp_path, "wb") as f:
         f.write(srt_file.getvalue())
 
@@ -23,8 +22,7 @@ def translate_srt(srt_file, target_language, api_key):
     total_subs = len(subs)
     translated_subs = 0
 
-    translator = Translator(to_lang=target_language, subscription_key=api_key)
-
+    translator = Translator(to_lang=target_language, api_key=api_key)
     start_time = time.time()
     progress_text = st.empty()
 
@@ -61,7 +59,7 @@ def main():
     srt_file = st.file_uploader("Upload .srt file", type=".srt")
     if srt_file:
         target_language = st.selectbox("Select Target Language", ["en", "fr", "ml", "es"])  # Add more language options if needed
-        api_key = st.text_input("Enter Azure Translator Text API key")
+        api_key = st.text_input("Enter API Key")
 
         if st.button("Translate"):
             with st.spinner("Translating..."):
@@ -74,8 +72,11 @@ def main():
     random_celeb()
 
 def generate_download_link(file_path):
-    download_url = f'<a href="{file_path}" download>Download Translated File</a>'
-    return download_url
+    with open(file_path, "rb") as f:
+        data = f.read()
+    encoded_file = base64.b64encode(data).decode()
+    href = f'<a href="data:file/srt;base64,{encoded_file}" download>Download Translated File</a>'
+    return href
 
 if __name__ == '__main__':
     main()
