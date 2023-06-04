@@ -34,7 +34,7 @@ def download_mp3(url):
 
         st.success(f'Done! Frame rate: {frame_rate}')
         with open(mp3_filename, 'rb') as file:
-            st.download_button('Download MP3', file, file_name=mp3_filename)
+            st.download_button(label='Download MP3', data=file, file_name=mp3_filename)
     else:
         st.error('Oops! Audio stream is not available!')
 
