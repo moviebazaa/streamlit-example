@@ -4,6 +4,7 @@ import pysrt
 from translate import Translator
 import os
 import time
+from concurrent import futures
 
 # Function for some random animations
 def random_celeb():
@@ -24,17 +25,20 @@ def translate_srt(srt_file, target_language):
     start_time = time.time()
     progress_text = st.empty()
 
-    for sub in subs:
+    def translate_line(sub):
         translated_text = translator.translate(sub.text)
         sub.text = translated_text
 
-        translated_subs += 1
-        progress = translated_subs / total_subs
-        percentage = int(progress * 100)
-        elapsed_time = time.time() - start_time
-        speed = translated_subs / elapsed_time
+    with futures.ThreadPoolExecutor() as executor:
+        future_to_sub = {executor.submit(translate_line, sub): sub for sub in subs}
+        for future in futures.as_completed(future_to_sub):
+            translated_subs += 1
+            progress = translated_subs / total_subs
+            percentage = int(progress * 100)
+            elapsed_time = time.time() - start_time
+            speed = translated_subs / elapsed_time
 
-        progress_text.write(f"Progress: {percentage}% | Speed: {speed:.2f} lines/s")
+            progress_text.write(f"Progress: {percentage}% | Speed: {speed:.2f} lines/s")
 
     progress_text.write("")  # Add a line break after the progress is complete
 
