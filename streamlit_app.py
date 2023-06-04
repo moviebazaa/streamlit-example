@@ -26,8 +26,9 @@ def translate_srt(srt_file, target_language):
 
         translated_subs += 1
         progress = translated_subs / total_subs
-        st.progress(progress)
-        st.text(f"Lines Translated: {translated_subs}/{total_subs}")
+        percentage = int(progress * 100)
+        st.progress(percentage)
+        st.text(f"Lines Translated: {translated_subs}/{total_subs} ({percentage}%)")
 
     translated_filename = f"translated_{srt_file.name}"
     translated_path = os.path.join(os.getcwd(), translated_filename)
