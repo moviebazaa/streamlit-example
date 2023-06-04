@@ -1,6 +1,6 @@
 import random
 import streamlit as st
-from pytube import YouTube
+from pytube import Playlist, YouTube
 import moviepy.editor as mp
 
 # Function for some random animations
@@ -9,30 +9,62 @@ def random_celeb():
 
 # Function to download YouTube videos in MP3 format
 def download_mp3(url):
-    video_caller = YouTube(url)
-    st.info(video_caller.title, icon="ℹ️")
+    # Check if the URL is a playlist
+    if 'playlist' in url:
+        playlist = Playlist(url)
+        st.info('Number of videos in playlist: %s' % len(playlist.video_urls), icon="ℹ️")
 
-    # Get the highest quality audio stream
-    audio_stream = video_caller.streams.filter(only_audio=True).order_by('abr').desc().first()
+        for video_url in playlist.video_urls:
+            video_caller = YouTube(video_url)
+            st.info(video_caller.title, icon="ℹ️")
 
-    if audio_stream is not None:
-        # Download the audio stream
-        audio_stream.download()
+            # Get the highest quality audio stream
+            audio_stream = video_caller.streams.filter(only_audio=True).order_by('abr').desc().first()
 
-        # Convert the downloaded video to MP3
-        video_filename = audio_stream.default_filename
-        mp3_filename = video_filename.split('.')[0] + '.mp3'
-        video_clip = mp.VideoFileClip(video_filename)
-        audio_clip = video_clip.audio
-        audio_clip.write_audiofile(mp3_filename)
-        audio_clip.close()
-        video_clip.close()
+            if audio_stream is not None:
+                # Download the audio stream
+                audio_stream.download()
 
-        st.success('Done!')
-        with open(mp3_filename, 'rb') as file:
-            st.download_button('Download MP3', file, file_name=mp3_filename)
+                # Convert the downloaded video to MP3
+                video_filename = audio_stream.default_filename
+                mp3_filename = video_filename.split('.')[0] + '.mp3'
+                video_clip = mp.VideoFileClip(video_filename)
+                audio_clip = video_clip.audio
+                audio_clip.write_audiofile(mp3_filename)
+                audio_clip.close()
+                video_clip.close()
+
+                st.success(f'Downloaded: {video_caller.title}')
+                with open(mp3_filename, 'rb') as file:
+                    st.download_button('Download MP3', file, file_name=mp3_filename)
+            else:
+                st.error(f'Oops! Audio stream is not available for: {video_caller.title}')
+
     else:
-        st.error('Oops! Audio stream is not available!')
+        video_caller = YouTube(url)
+        st.info(video_caller.title, icon="ℹ️")
+
+        # Get the highest quality audio stream
+        audio_stream = video_caller.streams.filter(only_audio=True).order_by('abr').desc().first()
+
+        if audio_stream is not None:
+            # Download the audio stream
+            audio_stream.download()
+
+            # Convert the downloaded video to MP3
+            video_filename = audio_stream.default_filename
+            mp3_filename = video_filename.split('.')[0] + '.mp3'
+            video_clip = mp.VideoFileClip(video_filename)
+            audio_clip = video_clip.audio
+            audio_clip.write_audiofile(mp3_filename)
+            audio_clip.close()
+            video_clip.close()
+
+            st.success('Done!')
+            with open(mp3_filename, 'rb') as file:
+                st.download_button('Download MP3', file, file_name=mp3_filename)
+        else:
+            st.error('Oops! Audio stream is not available!')
 
 # Integration of all above-defined functions
 st.title("YouTube MP3 Downloader")
