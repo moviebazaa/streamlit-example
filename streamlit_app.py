@@ -13,7 +13,8 @@ def random_celeb():
 
 # Function to translate .srt file
 def translate_srt(srt_file, target_language, api_key):
-    temp_path = "temp.srt"
+    temp_dir = os.path.dirname(os.path.abspath(__file__))
+    temp_path = os.path.join(temp_dir, "temp.srt")
     with open(temp_path, "wb") as f:
         f.write(srt_file.getvalue())
 
