@@ -1,7 +1,7 @@
 import random
 import streamlit as st
 import pysrt
-from google.cloud import translate_v2 as translate
+from googletrans import Translator
 import os
 import time
 from concurrent import futures
@@ -12,7 +12,7 @@ def random_celeb():
     return random.choice([st.balloons()])
 
 # Function to translate .srt file
-def translate_srt(srt_file, target_language, api_key):
+def translate_srt(srt_file, target_language):
     temp_path = "temp.srt"
     with open(temp_path, "wb") as f:
         f.write(srt_file.getvalue())
@@ -22,13 +22,13 @@ def translate_srt(srt_file, target_language, api_key):
     total_subs = len(subs)
     translated_subs = 0
 
-    translator = translate.Client()
+    translator = Translator(service_urls=['translate.google.com'])
     start_time = time.time()
     progress_text = st.empty()
 
     def translate_line(sub):
-        translated_text = translator.translate(sub.text, target_language, source_language='en')
-        sub.text = translated_text['translatedText']
+        translated_text = translator.translate(sub.text, dest=target_language)
+        sub.text = translated_text.text
 
     with futures.ThreadPoolExecutor() as executor:
         future_to_sub = {executor.submit(translate_line, sub): sub for sub in subs}
@@ -59,11 +59,10 @@ def main():
     srt_file = st.file_uploader("Upload .srt file", type=".srt")
     if srt_file:
         target_language = st.selectbox("Select Target Language", ["en", "fr", "ml", "es"])  # Add more language options if needed
-        api_key = st.text_input("Enter API Key")
 
         if st.button("Translate"):
             with st.spinner("Translating..."):
-                translated_file, translated_path = translate_srt(srt_file, target_language, api_key)
+                translated_file, translated_path = translate_srt(srt_file, target_language)
                 st.success("Translation completed!")
 
             download_link = generate_download_link(translated_path, translated_file)
