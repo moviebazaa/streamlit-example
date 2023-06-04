@@ -22,13 +22,13 @@ def translate_srt(srt_file, target_language, api_key):
     total_subs = len(subs)
     translated_subs = 0
 
-    translator = translate.Client(api_key)
+    translator = translate.Client()
     start_time = time.time()
     progress_text = st.empty()
 
     def translate_line(sub):
-        translation = translator.translate(sub.text, target_language)
-        sub.text = translation['translatedText']
+        translated_text = translator.translate(sub.text, target_language, source_language='en')
+        sub.text = translated_text['translatedText']
 
     with futures.ThreadPoolExecutor() as executor:
         future_to_sub = {executor.submit(translate_line, sub): sub for sub in subs}
@@ -66,15 +66,16 @@ def main():
                 translated_file, translated_path = translate_srt(srt_file, target_language, api_key)
                 st.success("Translation completed!")
 
-            st.markdown(get_download_link(translated_file, translated_path), unsafe_allow_html=True)
+            download_link = generate_download_link(translated_path, translated_file)
+            st.markdown(download_link, unsafe_allow_html=True)
 
     random_celeb()
 
-def get_download_link(translated_file, translated_path):
-    with open(translated_path, "rb") as file:
-        data = file.read()
+def generate_download_link(file_path, file_name):
+    with open(file_path, "rb") as f:
+        data = f.read()
     encoded_file = base64.b64encode(data).decode()
-    href = f'<a href="data:file/srt;base64,{encoded_file}" download="{translated_file}">Download Translated File</a>'
+    href = f'<a href="data:file/srt;base64,{encoded_file}" download="{file_name}">Download Translated File</a>'
     return href
 
 if __name__ == '__main__':
