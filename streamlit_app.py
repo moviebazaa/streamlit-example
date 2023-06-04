@@ -49,7 +49,7 @@ def translate_srt(srt_file, target_language):
 
     os.remove(temp_path)
 
-    return translated_filename
+    return translated_filename, translated_path
 
 # Streamlit app
 def main():
@@ -61,13 +61,20 @@ def main():
 
         if st.button("Translate"):
             with st.spinner("Translating..."):
-                translated_file = translate_srt(srt_file, target_language)
+                translated_file, translated_path = translate_srt(srt_file, target_language)
                 st.success("Translation completed!")
 
-            translated_path = os.path.join(os.getcwd(), translated_file)
-            st.download_button("Download Translated File", translated_path, f"translated_{srt_file.name}")
+            download_link = generate_download_link(translated_path)
+            st.markdown(download_link, unsafe_allow_html=True)
 
     random_celeb()
+
+def generate_download_link(file_path):
+    with open(file_path, "rb") as f:
+        data = f.read()
+    encoded_file = base64.b64encode(data).decode()
+    href = f'<a href="data:file/srt;base64,{encoded_file}" download>Download Translated File</a>'
+    return href
 
 if __name__ == '__main__':
     main()
