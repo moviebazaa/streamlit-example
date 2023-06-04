@@ -67,17 +67,9 @@ def main():
                 translated_file, translated_path = translate_srt(srt_file, target_language, api_key)
                 st.success("Translation completed!")
 
-            download_link = generate_download_link(translated_path)
-            st.markdown(download_link, unsafe_allow_html=True)
+            st.download_button(label="Download Translated File", data=translated_path, file_name=translated_file)
 
     random_celeb()
-
-def generate_download_link(file_path):
-    with open(file_path, "rb") as f:
-        data = f.read()
-    encoded_file = base64.b64encode(data).decode()
-    href = f'<a href="data:file/srt;base64,{encoded_file}" download>Download Translated File</a>'
-    return href
 
 if __name__ == '__main__':
     main()
