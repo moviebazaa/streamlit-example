@@ -1,38 +1,42 @@
 import random
-from flask import Flask, render_template, request, redirect, send_file
+import streamlit as st
 import pysrt
 from translate import Translator
 
+# Function for some random animations
+def random_celeb():
+    return random.choice([st.balloons()])
 
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-@app.route('/translate', methods=['POST'])
-def translate():
-    # Get the uploaded .srt file from the form
-    srt_file = request.files['srt_file']
-
-    # Read the .srt file using pysrt library
+# Function to translate .srt file
+def translate_srt(srt_file, target_language):
     subs = pysrt.open(srt_file)
-    
-    # Get the target language from the form
-    target_language = request.form['target_language']
-    
-    # Translate each subtitle in the .srt file
+
     translator = Translator(to_lang=target_language)
     for sub in subs:
         translated_text = translator.translate(sub.text)
         sub.text = translated_text
-    
-    # Save the translated .srt file
-    translated_filename = f"translated_{srt_file.filename}"
+
+    translated_filename = f"translated_{srt_file}"
     subs.save(translated_filename, encoding='utf-8')
 
-    # Return the translated file for download
-    return send_file(translated_filename, as_attachment=True)
+    return translated_filename
+
+# Streamlit app
+def main():
+    st.title("SRT File Translator")
+
+    srt_file = st.file_uploader("Upload .srt file", type=".srt")
+    if srt_file:
+        target_language = st.selectbox("Select Target Language", ["en", "fr", "es"])  # Add more language options if needed
+
+        if st.button("Translate"):
+            with st.spinner("Translating..."):
+                translated_file = translate_srt(srt_file, target_language)
+                st.success("Translation completed!")
+
+            st.download_button("Download Translated File", translated_file, f"translated_{srt_file.name}")
+
+    random_celeb()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    main()
