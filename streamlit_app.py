@@ -2,6 +2,7 @@ import random
 import streamlit as st
 import pysrt
 from translate import Translator
+import os
 
 # Function for some random animations
 def random_celeb():
@@ -9,15 +10,23 @@ def random_celeb():
 
 # Function to translate .srt file
 def translate_srt(srt_file, target_language):
-    subs = pysrt.open(srt_file)
+    temp_path = "temp.srt"
+    with open(temp_path, "wb") as f:
+        f.write(srt_file.getvalue())
+
+    subs = pysrt.open(temp_path)
 
     translator = Translator(to_lang=target_language)
     for sub in subs:
         translated_text = translator.translate(sub.text)
         sub.text = translated_text
 
-    translated_filename = f"translated_{srt_file}"
-    subs.save(translated_filename, encoding='utf-8')
+    translated_filename = f"translated_{srt_file.name}"
+    translated_path = os.path.join(os.getcwd(), translated_filename)
+
+    subs.save(translated_path, encoding='utf-8')
+
+    os.remove(temp_path)
 
     return translated_filename
 
@@ -34,7 +43,8 @@ def main():
                 translated_file = translate_srt(srt_file, target_language)
                 st.success("Translation completed!")
 
-            st.download_button("Download Translated File", translated_file, f"translated_{srt_file.name}")
+            translated_path = os.path.join(os.getcwd(), translated_file)
+            st.download_button("Download Translated File", translated_path, f"translated_{srt_file.name}")
 
     random_celeb()
 
