@@ -1,9 +1,7 @@
 import random
 import streamlit as st
 import pysrt
-from azure.cognitiveservices.translation import TranslationClient
-from azure.cognitiveservices.translation.models import TextTranslationBatchRequest
-from msrest.authentication import CognitiveServicesCredentials
+from microsofttranslator import Translator
 import os
 import time
 from concurrent import futures
@@ -24,15 +22,13 @@ def translate_srt(srt_file, target_language, api_key):
     total_subs = len(subs)
     translated_subs = 0
 
-    credentials = CognitiveServicesCredentials(api_key)
-    translator = TranslationClient(endpoint="https://api.cognitive.microsofttranslator.com/", credentials=credentials)
+    translator = Translator('', api_key)
 
     start_time = time.time()
     progress_text = st.empty()
 
     def translate_line(sub):
-        response = translator.translate_text(sub.text, target_language)
-        translated_text = response.translations[0].text
+        translated_text = translator.translate(sub.text, target_language)
         sub.text = translated_text
 
     with futures.ThreadPoolExecutor() as executor:
