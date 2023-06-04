@@ -1,4 +1,3 @@
-altair
-pandas
+
 streamlit 
 pytube==10.5.1
