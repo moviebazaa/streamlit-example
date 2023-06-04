@@ -55,7 +55,7 @@ def main():
 
     srt_file = st.file_uploader("Upload .srt file", type=".srt")
     if srt_file:
-        target_language = st.selectbox("Select Target Language", ["en", "fr", "es"])  # Add more language options if needed
+        target_language = st.selectbox("Select Target Language", ["en", "fr", "es", "ml"])  # Add more language options if needed
 
         if st.button("Translate"):
             with st.spinner("Translating..."):
