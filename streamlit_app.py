@@ -1,39 +1,80 @@
+import random
 import streamlit as st
-from pytube import YouTube
+from pytube import YouTube, Playlist, Channel
+import os
 
-def download_video(url, output_path, resolution):
-    try:
-        # Create a YouTube object
-        video = YouTube(url)
+# Function for some random animations
+def random_celeb():
+    return random.choice([st.balloons()])
 
-        # Get the stream with the selected resolution
-        stream = video.streams.get_by_resolution(resolution)
+# Function to download YouTube single videos
+def video(url):
+    video_caller = YouTube(url)
+    st.info(video_caller.title, icon="ℹ️")
 
-        # Download the video
-        stream.download(output_path)
+    # Get available video streams
+    streams = video_caller.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc()
 
-        st.success("Video downloaded successfully!")
+    # Create a dictionary to store resolution and corresponding streams
+    resolution_dict = {}
+    for stream in streams:
+        resolution = f"{stream.resolution} ({stream.mime_type.split('/')[1]})"
+        resolution_dict[resolution] = stream
 
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
+    # Get the available resolutions
+    resolutions = list(resolution_dict.keys())
 
-def main():
-    st.title("YouTube Video Downloader")
+    # Display resolution options
+    resolution = st.selectbox("Select Video Resolution", resolutions)
 
-    # Input fields
-    video_url = st.text_input("Enter YouTube video URL:")
-    output_directory = st.text_input("Enter output directory path:")
+    # Find the selected stream based on the resolution string
+    selected_stream = resolution_dict.get(resolution)
 
-    # Quality selection
-    available_qualities = ["1080p", "720p", "480p", "360p", "240p", "144p"]
-    selected_quality = st.selectbox("Select video quality:", available_qualities)
+    if selected_stream is not None:
+        selected_stream.download()
+        st.success('Done!')
+        with open(selected_stream.default_filename, 'rb') as file:
+            st.download_button('Download Video', file, file_name=selected_stream.default_filename + '.mp4')
+    else:
+        st.error('Oops! Stream is not available!')
 
-    # Download button
-    if st.button("Download"):
-        if video_url and output_directory:
-            download_video(video_url, output_directory, selected_quality)
-        else:
-            st.warning("Please enter the video URL and output directory path.")
+# Function for downloading YouTube playlist
+def playlist(url):
+    playlist_obj = Playlist(url)
+    st.info('Number of videos in playlist: %s' % len(playlist_obj.video_urls), icon="ℹ️")
+    for video in playlist_obj.videos:
+        x = video.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
+        if x is not None:
+            x.download()
+            st.success('Done!')
+            with open(selected_stream.default_filename, 'rb') as file:
+                st.download_button('Download Video', file, file_name=x.default_filename + '.mp4')
 
-if __name__ == "__main__":
-    main()
+# Function for downloading YouTube channel
+def channel(url):
+    channel_videos = Channel(url)
+    st.info(f'Downloading videos by: {channel_videos.channel_name}', icon="ℹ️")
+    for video in channel_videos.videos:
+        z = video.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
+        if z is not None:
+            z.download()
+            st.success('Done!')
+            with open(selected_stream.default_filename, 'rb') as file:
+                st.download_button('Download Channel', file, file_name=z.default_filename + '.mp4')
+
+# Integration of all above-defined functions
+st.title("YouTube Downloader")
+url = st.text_input(label="Paste your YouTube URL")
+if st.button("Download"):
+    if url:
+        try:
+            with st.spinner("Loading..."):
+                if 'playlist' in url:
+                    playlist(url)
+                elif 'channel' in url:
+                    channel(url)
+                else:
+                    video(url)
+            random_celeb()
+        except Exception as e:
+            st.error(e)
