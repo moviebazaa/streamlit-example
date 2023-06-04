@@ -3,6 +3,7 @@ import streamlit as st
 import pysrt
 from translate import Translator
 import os
+import time
 
 # Function for some random animations
 def random_celeb():
@@ -20,6 +21,7 @@ def translate_srt(srt_file, target_language):
     translated_subs = 0
 
     translator = Translator(to_lang=target_language)
+    start_time = time.time()
     for sub in subs:
         translated_text = translator.translate(sub.text)
         sub.text = translated_text
@@ -27,8 +29,10 @@ def translate_srt(srt_file, target_language):
         translated_subs += 1
         progress = translated_subs / total_subs
         percentage = int(progress * 100)
-        st.progress(percentage)
-        st.text(f"Lines Translated: {translated_subs}/{total_subs} ({percentage}%)")
+        elapsed_time = time.time() - start_time
+        speed = translated_subs / elapsed_time
+
+        st.text(f"Progress: {percentage}% | Speed: {speed:.2f} lines/s")
 
     translated_filename = f"translated_{srt_file.name}"
     translated_path = os.path.join(os.getcwd(), translated_filename)
