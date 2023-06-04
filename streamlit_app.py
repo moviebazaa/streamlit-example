@@ -16,23 +16,42 @@ In the meantime, below is an example of what you can do with just a few lines of
 """
 
 
-with st.echo(code_location='below'):
-    total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
-    num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
+import streamlit as st
+from pytube import YouTube
 
-    Point = namedtuple('Point', 'x y')
-    data = []
+def download_video(url, output_path, resolution):
+    try:
+        # Create a YouTube object
+        video = YouTube(url)
 
-    points_per_turn = total_points / num_turns
+        # Get the stream with the selected resolution
+        stream = video.streams.get_by_resolution(resolution)
 
-    for curr_point_num in range(total_points):
-        curr_turn, i = divmod(curr_point_num, points_per_turn)
-        angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
-        radius = curr_point_num / total_points
-        x = radius * math.cos(angle)
-        y = radius * math.sin(angle)
-        data.append(Point(x, y))
+        # Download the video
+        stream.download(output_path)
 
-    st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
-        .mark_circle(color='#0068c9', opacity=0.5)
-        .encode(x='x:Q', y='y:Q'))
+        st.success("Video downloaded successfully!")
+
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
+
+def main():
+    st.title("YouTube Video Downloader")
+
+    # Input fields
+    video_url = st.text_input("Enter YouTube video URL:")
+    output_directory = st.text_input("Enter output directory path:")
+
+    # Quality selection
+    available_qualities = ["1080p", "720p", "480p", "360p", "240p", "144p"]
+    selected_quality = st.selectbox("Select video quality:", available_qualities)
+
+    # Download button
+    if st.button("Download"):
+        if video_url and output_directory:
+            download_video(video_url, output_directory, selected_quality)
+        else:
+            st.warning("Please enter the video URL and output directory path.")
+
+if __name__ == "__main__":
+    main()
