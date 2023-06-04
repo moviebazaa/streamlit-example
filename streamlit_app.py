@@ -5,6 +5,7 @@ from translate import Translator
 import os
 import time
 from concurrent import futures
+import base64
 
 # Function for some random animations
 def random_celeb():
