@@ -1,5 +1,4 @@
 altair
 pandas
-streamlit
-pip install 
+streamlit 
 pytube==10.5.1
