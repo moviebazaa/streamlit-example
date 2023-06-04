@@ -1,6 +1,7 @@
 import random
 import streamlit as st
-import youtube_dl
+from pytube import YouTube
+import moviepy.editor as mp
 
 # Function for some random animations
 def random_celeb():
@@ -8,30 +9,34 @@ def random_celeb():
 
 # Function to download YouTube videos in MP3 format
 def download_mp3(url):
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
-        'outtmpl': '%(title)s.%(ext)s',
-    }
+    video_caller = YouTube(url)
+    st.info(video_caller.title, icon="ℹ️")
 
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=False)
-        video_title = info_dict.get('title', 'Untitled')
-        st.info(video_title, icon="ℹ️")
+    # Get the highest quality audio stream
+    audio_stream = video_caller.streams.filter(only_audio=True).order_by('abr').desc().first()
 
-        try:
-            ydl.download([url])
-            mp3_filename = f"{video_title}.mp3"
+    if audio_stream is not None:
+        # Download the audio stream
+        audio_stream.download()
 
-            st.success('Done!')
-            with open(mp3_filename, 'rb') as file:
-                st.download_button(label='Download MP3', data=file, file_name=mp3_filename)
-        except Exception as e:
-            st.error(f'Oops! An error occurred while downloading: {str(e)}')
+        # Convert the downloaded video to MP3
+        video_filename = audio_stream.default_filename
+        mp3_filename = video_filename.split('.')[0] + '.mp3'
+        video_clip = mp.VideoFileClip(video_filename)
+        audio_clip = video_clip.audio
+        audio_clip.write_audiofile(mp3_filename)
+        audio_clip.close()
+        video_clip.close()
+
+        # Retrieve video metadata including frame rate
+        video_metadata = mp.VideoFileClip(video_filename)
+        frame_rate = video_metadata.fps
+
+        st.success(f'Done! Frame rate: {frame_rate}')
+        with open(mp3_filename, 'rb') as file:
+            st.download_button(label='Download MP3', data=file, file_name=mp3_filename)
+    else:
+        st.error('Oops! Audio stream is not available!')
 
 # Integration of all above-defined functions
 st.title("YouTube MP3 Downloader")
