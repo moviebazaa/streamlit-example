@@ -16,10 +16,18 @@ def translate_srt(srt_file, target_language):
 
     subs = pysrt.open(temp_path)
 
+    total_subs = len(subs)
+    translated_subs = 0
+
     translator = Translator(to_lang=target_language)
     for sub in subs:
         translated_text = translator.translate(sub.text)
         sub.text = translated_text
+
+        translated_subs += 1
+        progress = translated_subs / total_subs
+        st.progress(progress)
+        st.text(f"Lines Translated: {translated_subs}/{total_subs}")
 
     translated_filename = f"translated_{srt_file.name}"
     translated_path = os.path.join(os.getcwd(), translated_filename)
