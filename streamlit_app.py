@@ -29,14 +29,12 @@ def translate_srt(srt_file, target_language):
         sub.text = translated_text
 
         translated_subs += 1
-        remaining_subs = total_subs - translated_subs
         progress = translated_subs / total_subs
         percentage = int(progress * 100)
         elapsed_time = time.time() - start_time
         speed = translated_subs / elapsed_time
 
-        progress_text.write(f"Progress: {percentage}% | Speed: {speed:.2f} lines/s | Remaining: {remaining_subs} lines",)
-        st.experimental_rerun()
+        progress_text.write(f"Progress: {percentage}% | Speed: {speed:.2f} lines/s")
 
     progress_text.write("")  # Add a line break after the progress is complete
 
@@ -55,7 +53,7 @@ def main():
 
     srt_file = st.file_uploader("Upload .srt file", type=".srt")
     if srt_file:
-        target_language = st.selectbox("Select Target Language", ["en", "fr", "es", "ml"])  # Add more language options if needed
+        target_language = st.selectbox("Select Target Language", ["en", "fr", "ml", "es"])  # Add more language options if needed
 
         if st.button("Translate"):
             with st.spinner("Translating..."):
