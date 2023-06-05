@@ -1,54 +1,22 @@
-import random
 import streamlit as st
-import pysrt
 from googletrans import Translator
-import os
-import time
-from concurrent import futures
+import pysrt
 import base64
-
-# Function for some random animations
-def random_celeb():
-    return random.choice([st.balloons()])
 
 # Function to translate .srt file
 def translate_srt(srt_file, target_language):
-    temp_path = "temp.srt"
-    with open(temp_path, "wb") as f:
-        f.write(srt_file.getvalue())
+    subs = pysrt.open(srt_file)
 
-    subs = pysrt.open(temp_path)
+    translator = Translator()
 
-    total_subs = len(subs)
-    translated_subs = 0
+    for sub in subs:
+        translated_text = translator.translate(sub.text, dest=target_language).text
+        sub.text = translated_text
 
-    translator = Translator(service_urls=['translate.google.com'])
-    start_time = time.time()
-    progress_text = st.empty()
-
-    def translate_line(sub):
-        translated_text = translator.translate(sub.text, dest=target_language)
-        sub.text = translated_text.text
-
-    with futures.ThreadPoolExecutor() as executor:
-        future_to_sub = {executor.submit(translate_line, sub): sub for sub in subs}
-        for future in futures.as_completed(future_to_sub):
-            translated_subs += 1
-            progress = translated_subs / total_subs
-            percentage = int(progress * 100)
-            elapsed_time = time.time() - start_time
-            speed = translated_subs / elapsed_time
-
-            progress_text.write(f"Progress: {percentage}% | Speed: {speed:.2f} lines/s")
-
-    progress_text.write("")  # Add a line break after the progress is complete
-
-    translated_filename = f"translated_{srt_file.name}"
-    translated_path = os.path.join(os.getcwd(), translated_filename)
+    translated_filename = f"translated_{srt_file.filename}"
+    translated_path = translated_filename
 
     subs.save(translated_path, encoding='utf-8')
-
-    os.remove(temp_path)
 
     return translated_filename, translated_path
 
@@ -65,16 +33,14 @@ def main():
                 translated_file, translated_path = translate_srt(srt_file, target_language)
                 st.success("Translation completed!")
 
-            download_link = generate_download_link(translated_path, translated_file)
+            download_link = generate_download_link(translated_path)
             st.markdown(download_link, unsafe_allow_html=True)
 
-    random_celeb()
-
-def generate_download_link(file_path, file_name):
+def generate_download_link(file_path):
     with open(file_path, "rb") as f:
         data = f.read()
     encoded_file = base64.b64encode(data).decode()
-    href = f'<a href="data:file/srt;base64,{encoded_file}" download="{file_name}">Download Translated File</a>'
+    href = f'<a href="data:file/srt;base64,{encoded_file}" download>Download Translated File</a>'
     return href
 
 if __name__ == '__main__':
