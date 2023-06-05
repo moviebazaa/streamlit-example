@@ -1,47 +1,62 @@
-import streamlit as st
-from googletrans import Translator
-import pysrt
-import base64
+from flask import Flask, render_template, request, redirect, url_for
+from google.cloud import translate_v2 as translate
+import os
 
-# Function to translate .srt file
-def translate_srt(srt_file, target_language):
-    subs = pysrt.open(srt_file)
+# Initialize Flask app
+app = Flask(__name__)
 
-    translator = Translator()
+# Configure Google Translate API
+translate_client = translate.Client()
 
-    for sub in subs:
-        translated_text = translator.translate(sub.text, dest=target_language).text
-        sub.text = translated_text
+# Function to translate subtitle file
+def translate_subtitle(subtitle_path, target_language):
+    # Read the subtitle file
+    with open(subtitle_path, 'r', encoding='utf-8') as file:
+        subtitle_text = file.read()
 
-    translated_filename = f"translated_{srt_file.filename}"
-    translated_path = translated_filename
+    # Translate the subtitle text
+    translated_text = translate_client.translate(subtitle_text, target_language=target_language)
 
-    subs.save(translated_path, encoding='utf-8')
+    # Return the translated text
+    return translated_text['translatedText']
 
-    return translated_filename, translated_path
+# Route for the home page
+@app.route('/')
+def home():
+    return render_template('index.html')
 
-# Streamlit app
-def main():
-    st.title("SRT File Translator")
+# Route for handling file upload and translation
+@app.route('/translate', methods=['POST'])
+def translate():
+    # Check if a file was uploaded
+    if 'subtitle' not in request.files:
+        return redirect(url_for('home'))
 
-    srt_file = st.file_uploader("Upload .srt file", type=".srt")
-    if srt_file:
-        target_language = st.selectbox("Select Target Language", ["en", "fr", "ml", "es"])  # Add more language options if needed
+    # Get the uploaded file and target language from the form
+    subtitle = request.files['subtitle']
+    target_language = request.form['target_language']
 
-        if st.button("Translate"):
-            with st.spinner("Translating..."):
-                translated_file, translated_path = translate_srt(srt_file, target_language)
-                st.success("Translation completed!")
+    # Check if the file is valid
+    if subtitle.filename == '':
+        return redirect(url_for('home'))
+    
+    # Save the subtitle file to a temporary location
+    subtitle_path = os.path.join('temp', subtitle.filename)
+    subtitle.save(subtitle_path)
 
-            download_link = generate_download_link(translated_path)
-            st.markdown(download_link, unsafe_allow_html=True)
+    # Translate the subtitle file
+    translated_text = translate_subtitle(subtitle_path, target_language)
 
-def generate_download_link(file_path):
-    with open(file_path, "rb") as f:
-        data = f.read()
-    encoded_file = base64.b64encode(data).decode()
-    href = f'<a href="data:file/srt;base64,{encoded_file}" download>Download Translated File</a>'
-    return href
+    # Delete the temporary subtitle file
+    os.remove(subtitle_path)
+
+    # Return the translated text to display on the website
+    return translated_text
 
 if __name__ == '__main__':
-    main()
+    # Create a 'temp' directory for temporary file storage
+    if not os.path.exists('temp'):
+        os.makedirs('temp')
+    
+    # Run the Flask app
+    app.run(debug=True)
